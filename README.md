@@ -23,30 +23,31 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 #### /components
 
 stores reusable components, such as:
-/DataForm.tsx - a single data object to store information, can edit or delete object
-/DataList.tsx - a list of the above data objects, allows user add new data
-/Footer.tsx - website footer, not in use
-/Header.tsx - website header, not in use
+
+- /DataForm.tsx - a single data object to store information, can edit or delete object
+- /DataList.tsx - a list of the above data objects, allows user add new data
+- /Footer.tsx - website footer, not in use
+- /Header.tsx - website header, not in use
 
 #### /Dashboard
 
-/page.tsx - user dashboard, can see all data objects, allows user to logout
+- /page.tsx - user dashboard, can see all data objects, allows user to logout
 
 #### /Register
 
-/page.tsx - allows new users to register, routed from login page
+- /page.tsx - allows new users to register, routed from login page
 
 #### /types
 
-/page.tsx - set type declarations, can be removed
+- /page.tsx - set type declarations, can be removed
 
 #### /page.tsx
 
-allows users to login
+- allows users to login
 
 # TODO
 
-- use axios, JavaScript library for making HTTP requests
+use axios, JavaScript library for making HTTP requests
 
 ##### /api/api.ts
 
