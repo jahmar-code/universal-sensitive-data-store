@@ -1,8 +1,6 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
 ## Getting Started
 
-First, run the development server:
+Run the development server:
 
 ```bash
 npm run dev
@@ -16,21 +14,67 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+#### Folder Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## /api
 
-## Learn More
+- stores api endpoints
 
-To learn more about Next.js, take a look at the following resources:
+## /components
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+stores reusable components, such as:
+/DataForm.tsx - a single data object to store information, can edit or delete object
+/DataList.tsx - a list of the above data objects, allows user add new data
+/Footer.tsx - website footer, not in use
+/Header.tsx - website header, not in use
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## /Dashboard
 
-## Deploy on Vercel
+/page.tsx - user dashboard, can see all data objects, allows user to logout
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## /Register
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+/page.tsx - allows new users to register, routed from login page
+
+## /types
+
+/page.tsx - set type declarations, can be removed
+
+## /page.tsx
+
+allows users to login
+
+### TODO
+
+- use axios, JavaScript library for making HTTP requests
+
+# /api/api.ts
+
+- set up reusable api endpoints
+
+# /components/DataForm.tsx
+
+- set up api call to add new data, update data
+- the way data is stuctured is not final, currently just a form so we can connect to backend and store generic data
+
+# /components/DataList
+
+- set up api call to delete data
+
+# /Dashboard/page.tsx
+
+- set up api to fetch user data from db
+- fetch username
+- logout functionality
+
+# /Register/page.tsx
+
+- set up api to register user
+
+# /page.tsx
+
+- set up api call to log user in & authenticate
+
+# .env.local
+
+- store environment variables and export them in next.config.mjs
