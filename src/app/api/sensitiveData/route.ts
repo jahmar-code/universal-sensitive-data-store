@@ -7,6 +7,7 @@ import { pool } from '@/app/lib/db';
 import fixedWindowRateLimiter from '@/app/lib/fixedWindowRateLimiter';
 import { z } from 'zod';
 import { PoolConnection } from 'mariadb';
+import argon2 from 'argon2';
 
 // Initialize rate limiter
 const rateLimiter = fixedWindowRateLimiter({
@@ -15,7 +16,7 @@ const rateLimiter = fixedWindowRateLimiter({
 });
 
 const insertDataSchema = z.object({
-  hash: z.string().min(1, { message: 'hash must be at least 1 character long' }),
+  sensitiveData: z.string().min(1, { message: 'sensitive data must be at least 1 character long' }),
   title: z.string().max(255, { message: 'title must be less than 256 characters long' }),
 });
 
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { hash, title } = parseResult.data;
+  const { sensitiveData, title } = parseResult.data;
 
   let connection: PoolConnection | null = null;
 
@@ -72,10 +73,18 @@ export async function POST(request: NextRequest) {
 
     await connection.beginTransaction();
 
+    // Hash the sensitive data using Argon2
+    const hashedSensitiveData = await argon2.hash(sensitiveData, {
+      type: argon2.argon2id,
+      memoryCost: 2 ** 16, // 64 MB
+      timeCost: 4,
+      parallelism: 2,
+    });
+    
     // Insert Operation
     const insertResult = await connection.query(
       'INSERT INTO sensitive_data (hash, title) VALUES (?, ?)',
-      [hash, title]
+      [hashedSensitiveData, title]
     );
 
     await connection.commit();
