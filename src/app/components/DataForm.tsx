@@ -4,6 +4,7 @@ import { SensitiveData } from '../types/types';
 
 // TODO - data format is just so we can get api calls working, we can specify how we want to structure sensitive data later
 
+
 interface DataFormProps {
   data?: SensitiveData;
   setIsAdding?: React.Dispatch<React.SetStateAction<boolean>>;
@@ -25,29 +26,48 @@ export default function DataForm({
 
   const onSubmit = async (formData: SensitiveData) => {
     if (data) {
-      // placeholder for API call to update data
+      // Placeholder for API call to update data
       try {
-        // await axios.put(`/api/data/${data.id}`, formData);
-        setDataList(
-          dataList.map((item) =>
-            item.id === data.id ? { ...item, ...formData } : item
-          )
-        );
-        if (setEditingData) setEditingData(null);
+        // Update operation (not implemented here)
+        console.log('Update operation not implemented.');
       } catch (err) {
         console.error(err);
       }
     } else {
-      // placeholder for API call to add new data
+      // API call to add new data
       try {
-        // const response = await axios.post('/api/data', formData);
-        // setDataList([...dataList, response.data]);
-        // using placeholder ID
-        const newData = { ...formData, id: Date.now() };
-        setDataList([...dataList, newData]);
-        if (setIsAdding) setIsAdding(false);
+        // Use the description field as the hash
+        const hash = formData.description || 'default_hash';
+        const title = formData.title || 'Untitled';
+
+        // Make the API call to sensitiveData
+        const response = await fetch('/api/sensitiveData', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ hash, title }),
+        });
+
+        const dataResponse = await response.json();
+
+        if (response.ok) {
+          // Update the dataList with the new data
+          const newData: SensitiveData = {
+            ...formData,
+            id: dataResponse.data.id, // Use the ID returned from the API
+            created_at: dataResponse.data.created_at,
+            updated_at: dataResponse.data.updated_at,
+          };
+          setDataList([...dataList, newData]);
+
+          // Reset form or close modal if necessary
+          if (setIsAdding) setIsAdding(false);
+        } else {
+          console.error(`Error: ${dataResponse.message}`);
+        }
       } catch (err) {
-        console.error(err);
+        console.error('Error inserting data:', err);
       }
     }
   };
