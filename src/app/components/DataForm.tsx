@@ -37,7 +37,7 @@ export default function DataForm({
       // API call to add new data
       try {
         // Use the description field as the hash
-        const hash = formData.description || 'default_hash';
+        const preHash = formData.description || 'default_hash';
         const title = formData.title || 'Untitled';
 
         // Make the API call to sensitiveData
@@ -46,7 +46,7 @@ export default function DataForm({
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ hash, title }),
+          body: JSON.stringify({ preHash, title }),
         });
 
         const dataResponse = await response.json();
