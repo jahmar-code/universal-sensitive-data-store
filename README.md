@@ -1,18 +1,21 @@
+## Requirements
+
+- [Docker](https://www.docker.com/) (ensure Docker is installed and running on your machine)
+
 ## Getting Started
 
-Run the development server:
+1. Copy the .env.example file to .env and populate it with your own constants:
+   ```bash 
+   cp .env.example .env
+2. Copy the .env.local.example file to .env.local and populate it with your own constants:
+   ```bash 
+   cp .env.local.example .env.local   
+3. Run the application containers.
+    ```bash
+    docker compose up
+4. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+*Note*: If you see an error similar to "database.sensitive_data table does not exist" then the SQL scripts in /mariadb/migrations failed to run. You will need to connect to the MariaDB nodes to run them manually.
 
 # Folder Structure
 
