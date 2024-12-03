@@ -6,34 +6,34 @@ import mariadb from 'mariadb';
 
 const CONNECTION_LIMIT = 10;
 
-interface PoolWithPort {
+interface PoolWithHost {
   pool: mariadb.Pool;
-  port: number;
+  host: string;
 }
 
 // This is horrific but I'm not sure how to share pool access with serverless functions in a better way
 declare global {
   // eslint-disable-next-line no-var
-  var mariadbPools: PoolWithPort[] | undefined;
+  var mariadbPools: PoolWithHost[] | undefined;
 }
 
-let pools: PoolWithPort[];
+let pools: PoolWithHost[];
 
 if (!global.mariadbPools) {
-  const ports = process.env.DB_PORTS
-    ? process.env.DB_PORTS.split(',').map((port) => parseInt(port.trim(), 10))
-    : [3306, 3307, 3308]; // Default ports if not specified
+  const hosts = process.env.DB_HOSTS
+    ? process.env.DB_HOSTS.split(',').map((host) => host.trim())
+    : ['mariadb_node1', 'mariadb_node2', 'mariadb_node3']; // Default hosts if not specified
 
-  global.mariadbPools = ports.map((port) => ({
+  global.mariadbPools = hosts.map((host) => ({
     pool: mariadb.createPool({
-      host: process.env.DB_HOST,
-      port: port,
+      host: host,
+      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
       connectionLimit: CONNECTION_LIMIT,
     }),
-    port: port,
+    host: host,
   }));
 
   console.log('Created new MariaDB connection pools.');
@@ -69,12 +69,12 @@ async function getConnection(key: string): Promise<mariadb.PoolConnection> {
   // Try each pool starting from the hashed index
   for (let i = 0; i < pools.length; i++) {
     const poolIndex = (index + i) % pools.length;
-    const { pool, port } = pools[poolIndex];
+    const { pool, host } = pools[poolIndex];
     try {
-      console.log(`Attempting to get connection from pool at port ${port}`);
+      console.log(`Attempting to get connection from pool at host ${host}`);
       return await pool.getConnection();
     } catch (error) {
-      console.error(`Failed to get connection from pool at port ${port}:`, error);
+      console.error(`Failed to get connection from pool at host ${host}:`, error);
       // Proceed to try the next pool
     }
   }
