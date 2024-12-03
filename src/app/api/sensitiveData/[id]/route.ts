@@ -39,7 +39,7 @@ export async function GET(
     const connection = await getConnection(clientIp);
 
     const [row] = await connection.query(
-      'SELECT id, title, created_at, updated_at FROM sensitive_data WHERE id = ?',
+      'SELECT id, title, hash, created_at, updated_at FROM sensitive_data WHERE id = ?',
       [params.id]
     );
     connection.release();
@@ -126,7 +126,7 @@ export async function PUT(
     }
 
     const [updatedData] = await connection.query(
-      'SELECT id, title, created_at, updated_at FROM sensitive_data WHERE id = ?',
+      'SELECT id, title, hash, created_at, updated_at FROM sensitive_data WHERE id = ?',
       [params.id]
     );
 
