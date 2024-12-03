@@ -6,52 +6,40 @@
  * used a shared database or cache (i.e. storing it directly in MariaDB or Redis). 
  */
 
-type Options = {
-  interval: number;  // in milliseconds
-  maxTokens: number; // Maximum tokens per interval
-};
+import { RateLimiterOptions, TokenRecord } from '@/app/types/types';
+import { TooManyRequestsError } from '@/app/lib/errors';
 
-type TokenRecord = {
-  tokens: number;
-  lastRefill: number;
-};
-
-const fixedWindowRateLimiter = ({ interval, maxTokens }: Options) => {
+/**
+ * Creates a fixed window rate limiter.
+ * @param options - The rate limiter options.
+ * @returns A function to perform rate limiting.
+ */
+const fixedWindowRateLimiter = ({ interval, maxTokens }: RateLimiterOptions) => {
   const tokenMap = new Map<string, TokenRecord>();
 
-  return {
-    check: async (key: string) => {
-      return new Promise<void>((resolve, reject) => {
-        const now: number = Date.now();
-        let record = tokenMap.get(key);
+  return async function rateLimit(key: string): Promise<void> {
+    const now = Date.now();
+    let record = tokenMap.get(key);
 
-        if (!record) {
-          // Initialize token record
-          record = { tokens: maxTokens - 1, lastRefill: now };
-          tokenMap.set(key, record);
-          resolve();
-          return;
-        }
+    if (!record) {
+      record = { tokens: maxTokens - 1, lastRefill: now };
+      tokenMap.set(key, record);
+      return;
+    }
 
-        const timePassed: number = now - record.lastRefill;
+    const timePassed = now - record.lastRefill;
 
-        if (timePassed > interval) {
-          // Refill tokens
-          record.tokens = maxTokens - 1;
-          record.lastRefill = now;
-          resolve();
-          return;
-        }
+    if (timePassed > interval) {
+      record.tokens = maxTokens - 1;
+      record.lastRefill = now;
+      return;
+    }
 
-        if (record.tokens > 0) {
-          record.tokens -= 1;
-          resolve();
-        } else {
-          // Exceeded rate limit
-          reject();
-        }
-      });
-    },
+    if (record.tokens > 0) {
+      record.tokens -= 1;
+    } else {
+      throw new TooManyRequestsError();
+    }
   };
 };
 

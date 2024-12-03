@@ -3,123 +3,117 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { pool } from '@/app/lib/db';
+import { getClientIp, handleError } from '@/app/lib/utils';
 import fixedWindowRateLimiter from '@/app/lib/fixedWindowRateLimiter';
 import { z } from 'zod';
-import { PoolConnection } from 'mariadb';
+import { getConnection } from '@/app/lib/db';
+import { SensitiveData, ResponseData } from '@/app/types/types';
+import { ValidationError } from '@/app/lib/errors';
 import argon2 from 'argon2';
 
 // Initialize rate limiter
 const rateLimiter = fixedWindowRateLimiter({
-  interval: 60 * 1000, // 1 minute
-  maxTokens: 10,       // Max 10 requests per interval
+  interval: 10 * 1000, // 10 second interval
+  maxTokens: 20,       // Max 20 requests per interval
 });
 
 const insertDataSchema = z.object({
-  preHash: z.string().min(1, { message: 'sensitive data must be at least 1 character long' }),
-  title: z.string().max(255, { message: 'title must be less than 256 characters long' }),
+  preHash: z.string().min(1, { message: 'Sensitive data must be at least 1 character long' }),
+  title: z.string().max(255, { message: 'Title must be less than 256 characters long' }),
 });
 
-interface ResponseData {
-  message: string;
-  data?: {
-    id: string; // Changed to string if BigInt is converted to string
-    hash: string;
-    title: string;
-    created_at: string;
-    updated_at: string;
-  };
-}
-
-export async function GET(request: NextRequest) {
-  return NextResponse.json({ message: 'GET method not supported' }, { status: 405 });
-}
-
-export async function POST(request: NextRequest) {
-  // Rate Limiting
+/**
+ * GET /api/sensitive_data
+ * Retrieves all sensitive data records.
+ */
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
-    const clientIp =
-      request.headers.get('x-forwarded-for') ||
-      request.headers.get('x-real-ip') ||
-      request.ip ||
-      'unknown';
-    await rateLimiter.check(clientIp);
-  } catch {
-    return NextResponse.json({ message: 'Too Many Requests' }, { status: 429 });
-  }
+    const clientIp = getClientIp(request);
+    await rateLimiter(clientIp);
 
-  // Validate Input
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ message: 'Invalid JSON' }, { status: 400 });
-  }
+    const connection = await getConnection(clientIp);
 
-  const parseResult = insertDataSchema.safeParse(body);
-  if (!parseResult.success) {
-    return NextResponse.json(
-      { message: parseResult.error.errors[0].message },
-      { status: 400 }
+    const rows = await connection.query(
+      'SELECT id, title, created_at, updated_at FROM sensitive_data'
     );
+    connection.release();
+
+    // Convert BigInt values to strings
+    const data: SensitiveData[] = rows.map((row: any) => ({
+      ...row,
+      id: row.id.toString(),
+    }));
+
+    const response: ResponseData<SensitiveData[]> = {
+      message: 'Data retrieved successfully',
+      data,
+    };
+
+    return NextResponse.json(response, { status: 200 });
+  } catch (error) {
+    const { message, status } = handleError(error);
+    return NextResponse.json({ message }, { status });
   }
+}
 
-  const { preHash, title } = parseResult.data;
-
-  let connection: PoolConnection | null = null;
-
+/**
+ * POST /api/sensitive_data
+ * Creates a new sensitive data record.
+ */
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    connection = await pool.getConnection();
+    const clientIp = getClientIp(request);
+    await rateLimiter(clientIp);
+
+    const body = await request.json();
+    const parseResult = insertDataSchema.safeParse(body);
+
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.errors[0].message);
+    }
+
+    const { preHash, title } = parseResult.data;
+    const connection = await getConnection(clientIp);
 
     await connection.beginTransaction();
 
-    // Hash the sensitive data using Argon2
     const hash = await argon2.hash(preHash, {
       type: argon2.argon2id,
-      memoryCost: 2 ** 16, // 64 MB
+      memoryCost: 2 ** 16,
       timeCost: 4,
       parallelism: 2,
     });
 
-    // Insert Operation
     const insertResult = await connection.query(
       'INSERT INTO sensitive_data (hash, title) VALUES (?, ?)',
       [hash, title]
     );
 
-    await connection.commit();
-
-    // Fetch the inserted record
     const [insertedData] = await connection.query(
-      'SELECT id, hash, title, created_at, updated_at FROM sensitive_data WHERE id = ?',
+      'SELECT id, title, created_at, updated_at FROM sensitive_data WHERE id = ?',
       [insertResult.insertId]
     );
 
-    // Convert BigInt values to strings
-    const data = Object.fromEntries(
-      Object.entries(insertedData).map(([key, value]) => {
-        if (typeof value === 'bigint') {
-          return [key, value.toString()];
-        }
-        return [key, value];
-      })
-    );
+    await connection.commit();
+    connection.release();
 
-    return NextResponse.json(
-      {
-        message: 'Data inserted successfully',
-        data: data,
-      },
-      { status: 201 }
-    );
+    if (!insertedData) {
+      throw new Error('Failed to retrieve inserted data');
+    }
+
+    const data: SensitiveData = {
+      ...insertedData,
+      id: insertedData.id.toString(),
+    };
+
+    const response: ResponseData<SensitiveData> = {
+      message: 'Data inserted successfully',
+      data,
+    };
+
+    return NextResponse.json(response, { status: 201 });
   } catch (error) {
-    if (connection) await connection.rollback();
-    console.error('Database Insert Error:', error);
-    return NextResponse.json(
-      { message: 'Internal Server Error' },
-      { status: 500 }
-    );
-  } finally {
-    if (connection) connection.release();
+    const { message, status } = handleError(error);
+    return NextResponse.json({ message }, { status });
   }
 }
