@@ -34,7 +34,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const connection = await getConnection(clientIp);
 
     const rows = await connection.query(
-      'SELECT id, title, created_at, updated_at FROM sensitive_data'
+      'SELECT id, title, hash, created_at, updated_at FROM sensitive_data'
     );
     connection.release();
 
