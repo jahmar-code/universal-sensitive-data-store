@@ -1,18 +1,30 @@
 services:
   mariadb_node1:
-    image: mariadb:11.5.2
+    build: 
+      context: ./mariadb
+      dockerfile: Dockerfile
     container_name: mariadb_node1
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       MARIADB_DATABASE: ${MARIADB_DATABASE}
       MARIADB_USER: ${MARIADB_USER}
       MARIADB_PASSWORD: ${MARIADB_PASSWORD}
-      MARIADB_GALERA_CLUSTER_NAME: "my_galera_cluster"
-      MARIADB_GALERA_NODE_NAME: "node1"
-      MARIADB_GALERA_NODE_ADDRESS: "mariadb_node1"
+      MARIADB_GALERA_CLUSTER_NAME: my_galera_cluster
+      MARIADB_GALERA_NODE_NAME: node1
+      MARIADB_GALERA_NODE_ADDRESS: mariadb_node1
       MARIADB_GALERA_CLUSTER_ADDRESS: "gcomm://mariadb_node1,mariadb_node2,mariadb_node3"
-      MARIADB_GALERA_SST_METHOD: "rsync"
       MARIADB_GALERA_CLUSTER_BOOTSTRAP: "yes"
+    command: 
+      - --wsrep-new-cluster
+      - --wsrep_provider=/usr/lib/libgalera_smm.so
+      - --wsrep-on=ON
+      - --wsrep_cluster_name=my_galera_cluster
+      - --wsrep_cluster_address=gcomm://mariadb_node1,mariadb_node2,mariadb_node3
+      - --wsrep_node_name=node1
+      - --wsrep_node_address=mariadb_node1
+      - --wsrep_sst_method=rsync
+      - --binlog_format=ROW
+      - --default-storage-engine=InnoDB
     ports:
       - "3306:3306"
     volumes:
@@ -23,18 +35,31 @@ services:
     restart: unless-stopped
 
   mariadb_node2:
-    image: mariadb:11.5.2
+    build: 
+      context: ./mariadb
+      dockerfile: Dockerfile
     container_name: mariadb_node2
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       MARIADB_DATABASE: ${MARIADB_DATABASE}
       MARIADB_USER: ${MARIADB_USER}
       MARIADB_PASSWORD: ${MARIADB_PASSWORD}
-      MARIADB_GALERA_CLUSTER_NAME: "my_galera_cluster"
-      MARIADB_GALERA_NODE_NAME: "node2"
-      MARIADB_GALERA_NODE_ADDRESS: "mariadb_node2"
+      MARIADB_GALERA_CLUSTER_NAME: my_galera_cluster
+      MARIADB_GALERA_NODE_NAME: node2
+      MARIADB_GALERA_NODE_ADDRESS: mariadb_node2
       MARIADB_GALERA_CLUSTER_ADDRESS: "gcomm://mariadb_node1,mariadb_node2,mariadb_node3"
-      MARIADB_GALERA_SST_METHOD: "rsync"
+    command: 
+      - --wsrep_provider=/usr/lib/libgalera_smm.so
+      - --wsrep-on=ON
+      - --wsrep_cluster_name=my_galera_cluster
+      - --wsrep_cluster_address=gcomm://mariadb_node1,mariadb_node2,mariadb_node3
+      - --wsrep_node_name=node2
+      - --wsrep_node_address=mariadb_node2
+      - --wsrep_sst_method=rsync
+      - --binlog_format=ROW
+      - --default-storage-engine=InnoDB
+    depends_on:
+      - mariadb_node1
     ports:
       - "3307:3306"
     volumes:
@@ -45,18 +70,31 @@ services:
     restart: unless-stopped
 
   mariadb_node3:
-    image: mariadb:11.5.2
+    build: 
+      context: ./mariadb
+      dockerfile: Dockerfile
     container_name: mariadb_node3
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       MARIADB_DATABASE: ${MARIADB_DATABASE}
       MARIADB_USER: ${MARIADB_USER}
       MARIADB_PASSWORD: ${MARIADB_PASSWORD}
-      MARIADB_GALERA_CLUSTER_NAME: "my_galera_cluster"
-      MARIADB_GALERA_NODE_NAME: "node3"
-      MARIADB_GALERA_NODE_ADDRESS: "mariadb_node3"
+      MARIADB_GALERA_CLUSTER_NAME: my_galera_cluster
+      MARIADB_GALERA_NODE_NAME: node3
+      MARIADB_GALERA_NODE_ADDRESS: mariadb_node3
       MARIADB_GALERA_CLUSTER_ADDRESS: "gcomm://mariadb_node1,mariadb_node2,mariadb_node3"
-      MARIADB_GALERA_SST_METHOD: "rsync"
+    command: 
+      - --wsrep_provider=/usr/lib/libgalera_smm.so
+      - --wsrep-on=ON
+      - --wsrep_cluster_name=my_galera_cluster
+      - --wsrep_cluster_address=gcomm://mariadb_node1,mariadb_node2,mariadb_node3
+      - --wsrep_node_name=node3
+      - --wsrep_node_address=mariadb_node3
+      - --wsrep_sst_method=rsync
+      - --binlog_format=ROW
+      - --default-storage-engine=InnoDB
+    depends_on:
+      - mariadb_node1
     ports:
       - "3308:3306"
     volumes:

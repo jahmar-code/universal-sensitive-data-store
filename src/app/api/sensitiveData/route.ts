@@ -90,7 +90,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
 
     const [insertedData] = await connection.query(
-      'SELECT id, title, created_at, updated_at FROM sensitive_data WHERE id = ?',
+      'SELECT id, title, hash, created_at, updated_at FROM sensitive_data WHERE id = ?',
       [insertResult.insertId]
     );
 
