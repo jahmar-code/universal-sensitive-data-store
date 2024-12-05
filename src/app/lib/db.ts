@@ -2,6 +2,8 @@
  * Database connector with built-in connection pooling and hash-based load-balancer.
  */
 
+
+/////// making too many connection pools - implement one instance
 import mariadb from 'mariadb';
 
 const CONNECTION_LIMIT = 10;
@@ -14,7 +16,7 @@ interface PoolWithHost {
 // This is horrific but I'm not sure how to share pool access with serverless functions in a better way
 declare global {
   // eslint-disable-next-line no-var
-  var mariadbPools: PoolWithHost[] | undefined;
+  var mariadbPools: PoolWithHost[] | undefined
 }
 
 let pools: PoolWithHost[];
@@ -40,6 +42,11 @@ if (!global.mariadbPools) {
 }
 
 pools = global.mariadbPools;
+
+
+//////
+
+
 
 /**
  * Simple hash function to convert a string into a numeric hash.

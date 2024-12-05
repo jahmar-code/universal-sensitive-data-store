@@ -1,9 +1,6 @@
-import { useForm } from 'react-hook-form';
-import { SensitiveData } from '../types/types';
-
-
-// TODO - data format is just so we can get api calls working, we can specify how we want to structure sensitive data later
-
+import { useForm } from "react-hook-form";
+import { SensitiveData } from "../types/types";
+import { useState } from "react";
 
 interface DataFormProps {
   data?: SensitiveData;
@@ -23,51 +20,70 @@ export default function DataForm({
   const { register, handleSubmit } = useForm<SensitiveData>({
     defaultValues: data || {},
   });
+  const [error, setError] = useState("");
 
   const onSubmit = async (formData: SensitiveData) => {
     if (data) {
-      // Placeholder for API call to update data
+      // this updates existing data
       try {
-        // Update operation (not implemented here)
-        console.log('Update operation not implemented.');
-      } catch (err) {
+        const response = await fetch(`/api/sensitiveData/${data.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            preHash: formData.description,
+            title: formData.title,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to update data.");
+        }
+
+        setDataList(
+          dataList.map((item) =>
+            item.id === data.id ? { ...item, ...formData } : item
+          )
+        );
+        if (setEditingData) setEditingData(null);
+      } catch (err: any) {
+        setError(err.message);
         console.error(err);
       }
     } else {
-      // API call to add new data
+      // this inserts new data
       try {
-        // Use the description field as the hash
-        const preHash = formData.description || 'default_hash';
-        const title = formData.title || 'Untitled';
-
-        // Make the API call to sensitiveData
-        const response = await fetch('/api/sensitiveData', {
-          method: 'POST',
+        const response = await fetch("/api/sensitiveData", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-          body: JSON.stringify({ preHash, title }),
+          body: JSON.stringify({
+            preHash: formData.description,
+            title: formData.title,
+          }),
         });
 
-        const dataResponse = await response.json();
-
-        if (response.ok) {
-          // Update the dataList with the new data
-          const newData: SensitiveData = {
-            ...formData,
-            id: dataResponse.data.id, // Use the ID returned from the API
-            created_at: dataResponse.data.created_at,
-            updated_at: dataResponse.data.updated_at,
-          };
-          setDataList([...dataList, newData]);
-
-          // Reset form or close modal if necessary
-          if (setIsAdding) setIsAdding(false);
-        } else {
-          console.error(`Error: ${dataResponse.message}`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to add data.");
         }
-      } catch (err) {
-        console.error('Error inserting data:', err);
+
+        const responseData = await response.json();
+        const newData: SensitiveData = {
+          ...formData,
+          id: responseData.data.id,
+          created_at: responseData.data.created_at,
+          updated_at: responseData.data.updated_at,
+        };
+        setDataList([...dataList, newData]);
+
+        if (setIsAdding) setIsAdding(false);
+      } catch (err: any) {
+        setError(err.message);
+        console.error(err);
       }
     }
   };
@@ -78,11 +94,15 @@ export default function DataForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="mb-4 border p-4 rounded-md">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="mb-4 border p-4 rounded-md"
+    >
+      {error && <p className="text-red-500 mb-2">{error}</p>}
       <div className="mb-2">
         <label className="block mb-1">Title</label>
         <input
-          {...register('title', { required: true })}
+          {...register("title", { required: true })}
           className="w-full border px-3 py-2 text-black rounded-md"
           type="text"
           placeholder="Enter title"
@@ -91,19 +111,22 @@ export default function DataForm({
       <div className="mb-2">
         <label className="block mb-1">Data</label>
         <textarea
-          {...register('description', { required: true })}
+          {...register("description", { required: true })}
           className="w-full border px-3 py-2 text-black rounded-md"
           placeholder="Enter data"
         />
       </div>
       <div className="flex">
-        <button type="submit" className="mr-2 bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-400">
-          {data ? 'Update' : 'Add'}
+        <button
+          type="submit"
+          className="mr-2 bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-400"
+        >
+          {data ? "Update" : "Add"}
         </button>
         <button
           type="button"
           onClick={handleCancel}
-          className="bg-gray-600 px-3 py-1 rounded-md hover:bg-gray-500"
+          className="bg-gray-600 text-white px-3 py-1 rounded-md hover:bg-gray-500"
         >
           Cancel
         </button>
