@@ -2,51 +2,42 @@
  * Database connector with built-in connection pooling and hash-based load-balancer.
  */
 
-
-/////// making too many connection pools - implement one instance
 import mariadb from 'mariadb';
 
-const CONNECTION_LIMIT = 10;
+// Since we're abusing the connection pool by using it in a serverless function, there will only ever be one connection.
+const CONNECTION_LIMIT = 1; 
 
 interface PoolWithHost {
   pool: mariadb.Pool;
   host: string;
 }
 
-// This is horrific but I'm not sure how to share pool access with serverless functions in a better way
-declare global {
-  // eslint-disable-next-line no-var
-  var mariadbPools: PoolWithHost[] | undefined
-}
+const hosts = process.env.DB_HOSTS
+  ? process.env.DB_HOSTS.split(',').map((host) => host.trim())
+  : ['mariadb_node1', 'mariadb_node2', 'mariadb_node3']; // Default hosts if not specified
 
-let pools: PoolWithHost[];
+// Use module-level variable instead of global
+let pools: PoolWithHost[] | null = null;
 
-if (!global.mariadbPools) {
-  const hosts = process.env.DB_HOSTS
-    ? process.env.DB_HOSTS.split(',').map((host) => host.trim())
-    : ['mariadb_node1', 'mariadb_node2', 'mariadb_node3']; // Default hosts if not specified
-
-  global.mariadbPools = hosts.map((host) => ({
-    pool: mariadb.createPool({
+function initPools(): PoolWithHost[] {
+  if (!pools) {
+    pools = hosts.map((host) => ({
+      pool: mariadb.createPool({
+        host: host,
+        port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+        connectionLimit: CONNECTION_LIMIT,
+      }),
       host: host,
-      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-      connectionLimit: CONNECTION_LIMIT,
-    }),
-    host: host,
-  }));
+    }));
 
-  console.log('Created new MariaDB connection pools.');
+    console.log('Created new MariaDB connection pools.');
+  }
+
+  return pools;
 }
-
-pools = global.mariadbPools;
-
-
-//////
-
-
 
 /**
  * Simple hash function to convert a string into a numeric hash.
@@ -70,10 +61,11 @@ function hashStringToNumber(str: string): number {
  * @throws An error if all connection attempts fail.
  */
 async function getConnection(key: string): Promise<mariadb.PoolConnection> {
+  const pools = initPools();
+
   const hash = hashStringToNumber(key);
   const index = hash % pools.length;
 
-  // Try each pool starting from the hashed index
   for (let i = 0; i < pools.length; i++) {
     const poolIndex = (index + i) % pools.length;
     const { pool, host } = pools[poolIndex];
@@ -82,7 +74,6 @@ async function getConnection(key: string): Promise<mariadb.PoolConnection> {
       return await pool.getConnection();
     } catch (error) {
       console.error(`Failed to get connection from pool at host ${host}:`, error);
-      // Proceed to try the next pool
     }
   }
 

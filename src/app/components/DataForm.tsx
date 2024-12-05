@@ -42,9 +42,23 @@ export default function DataForm({
           throw new Error(errorData.message || "Failed to update data.");
         }
 
+        const updatedData = await response.json();
+
+        // setDataList(
+        //   dataList.map((item) =>
+        //     item.id === data.id ? { ...item, ...formData } : item
+        //   )
+        // );
         setDataList(
           dataList.map((item) =>
-            item.id === data.id ? { ...item, ...formData } : item
+            item.id === data.id
+              ? {
+                  ...item,
+                  title: updatedData.data.title,
+                  hash: updatedData.data.hash,
+                  updated_at: updatedData.data.updated_at,
+                }
+              : item
           )
         );
         if (setEditingData) setEditingData(null);
@@ -75,6 +89,7 @@ export default function DataForm({
         const newData: SensitiveData = {
           ...formData,
           id: responseData.data.id,
+          hash: responseData.data.hash,
           created_at: responseData.data.created_at,
           updated_at: responseData.data.updated_at,
         };
