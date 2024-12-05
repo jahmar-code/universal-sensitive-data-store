@@ -104,6 +104,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const data: SensitiveData = {
       ...insertedData,
       id: insertedData.id.toString(),
+      hash // TODO
     };
 
     const response: ResponseData<SensitiveData> = {
