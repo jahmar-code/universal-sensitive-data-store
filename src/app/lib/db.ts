@@ -6,6 +6,7 @@ import mariadb from 'mariadb';
 
 // Since we're abusing the connection pool by using it in a serverless function, there will only ever be one connection.
 const CONNECTION_LIMIT = 1; 
+const ACQUIRE_TIMEOUT = 2000; // 2 seconds
 
 interface PoolWithHost {
   pool: mariadb.Pool;
@@ -29,8 +30,10 @@ function initPools(): PoolWithHost[] {
         password: process.env.DB_PASSWORD,
         database: process.env.DB_NAME,
         connectionLimit: CONNECTION_LIMIT,
+        acquireTimeout: ACQUIRE_TIMEOUT,
       }),
       host: host,
+      healthy: true,
     }));
 
     console.log('Created new MariaDB connection pools.');
