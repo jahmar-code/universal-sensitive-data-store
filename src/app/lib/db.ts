@@ -74,7 +74,6 @@ async function getConnection(key: string): Promise<mariadb.PoolConnection> {
     const { pool, host } = pools[poolIndex];
     try {
       console.log(`Attempting to get connection from pool at host ${host}`);
-      console.info("SUCCESSSSSSS")
       return await pool.getConnection();
     } catch (error) {
       console.error(`Failed to get connection from pool at host ${host}:`, error);
