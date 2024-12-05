@@ -1,0 +1,39 @@
+[mysqld]
+bind-address=0.0.0.0
+
+# Enable general logging for debugging
+general_log=ON
+general_log_file=/var/lib/mysql/general.log
+log_error=/var/lib/mysql/error.log
+
+# Galera Provider Configuration
+wsrep_provider=/usr/lib/libgalera_smm.so
+wsrep_on=ON
+wsrep_debug=ON
+
+# Galera Cluster Configuration
+wsrep_cluster_name=CLUSTER_NAME_PLACEHOLDER
+wsrep_cluster_address=CLUSTER_ADDRESS_PLACEHOLDER
+
+# Galera Node Configuration
+wsrep_node_name=NODE_NAME_PLACEHOLDER
+wsrep_node_address=NODE_ADDRESS_PLACEHOLDER
+
+# SST Configuration
+wsrep_sst_method=rsync
+
+# Galera Synchronization Configuration
+wsrep_slave_threads=4
+wsrep_sync_wait=1
+wsrep_causal_reads=ON
+wsrep_retry_autocommit=3
+
+# InnoDB Configuration
+innodb_autoinc_lock_mode=2
+innodb_flush_log_at_trx_commit=0
+innodb_buffer_pool_size=512M
+
+# Basic MariaDB Configuration
+max_connections=1000
+binlog_format=ROW
+default_storage_engine=InnoDB
